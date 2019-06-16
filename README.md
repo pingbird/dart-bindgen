@@ -27,7 +27,7 @@ dart:ffi is unsable and extremely limited, in it's current state it is not possi
 Despite these limitations I think it should be possible to get libclang binding working, at least enough for bindgen-bootstrap on Linux
 
 ### In the future
-Many C APIs use `#define` with a cast for constant values but bindgen doesn't parse them, it is possible to extract typed constants in the same way I do with const variable declarations.
+Many C APIs use `#define` with a cast for constant values but bindgen isn't designed to parse them at the moment, it is possible to extract typed constants in the same way I do with const variable declarations.
 
 Because this is based on libclang it is possible to generate bindings for more complex C++ libraries but it will be difficult to work with templated code, automatic binding generation can only go so far which is why I am spending extra time to make the tooling easier to extend.
 
