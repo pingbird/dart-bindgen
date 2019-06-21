@@ -4,9 +4,10 @@
 /// To load a declaration file use [jsonDecode] and [CUnitDecl.fromJson].
 library clang_decl;
 
+import 'dart:collection';
 import 'dart:convert';
 
-import 'package:bindgen/binding.dart';
+import 'package:bindgen/bindmap.dart';
 
 import 'package:quiver/core.dart';
 import 'package:quiver/collection.dart';
@@ -112,57 +113,78 @@ class CPrimitiveType extends CType {
     kind == other.kind;
 }
 
-class CFieldDecl {
-  CFieldDecl(this.type, this.size, this.offset);
+class CSrcRef {
+  CSrcRef(this.fileName, this.line, this.col, this.offset);
 
+  String fileName;
+  int line;
+  int col;
+  int offset;
+
+  CSrcRef.fromJson(dynamic jsonData) :
+    fileName = jsonData["fileName"],
+    line = jsonData["line"],
+    col = jsonData["col"],
+    offset = jsonData["offset"];
+
+  get hashCode => hashObjects(["CSrcRef", fileName, line, col, offset]);
+  operator ==(other) =>
+    other is CSrcRef &&
+    other.fileName == fileName &&
+    other.line == line &&
+    other.col == col &&
+    other.offset == offset;
+}
+
+class CFieldDecl {
+  CFieldDecl(this.name, this.type, this.size, this.offset);
+
+  String name;
   CType type;
   int size;
   int offset;
 
   CFieldDecl.fromJson(dynamic jsonData) :
+    name = jsonData["name"],
     type = CType.fromJson(jsonData["type"]),
     size = jsonData["size"],
     offset = jsonData["offset"];
 }
 
 class CStructDecl {
-  CStructDecl(this.fields, this.size, this.fileName);
+  CStructDecl(this.fields, this.size);
 
-  Map<String, CFieldDecl> fields;
+  LinkedHashMap<String, CFieldDecl> fields;
   int size;
-  String fileName;
 
   CStructDecl.fromJson(dynamic jsonData) :
-    fields = (jsonData["fields"] as Map<String, dynamic>)
-      .map((k, v) => MapEntry(k, CFieldDecl.fromJson(v))),
-    size = jsonData["size"],
-    fileName = jsonData["fileName"];
+    fields = LinkedHashMap.fromEntries((jsonData["fields"] as List).map((e) {
+      var field = CFieldDecl.fromJson(e);
+      return MapEntry(field.name, field);
+    })),
+    size = jsonData["size"];
 }
 
 class CVarDecl {
-  CVarDecl(this.type, this.fileName);
+  CVarDecl(this.type);
 
   CFuncType type;
-  String fileName;
 
   CVarDecl.fromJson(dynamic jsonData) :
-    type = CFuncType.fromJson(jsonData),
-    fileName = jsonData["fileName"];
+    type = CFuncType.fromJson(jsonData);
 }
 
 class CConstDecl {
-  CConstDecl(this.name, this.type, this.value, this.fileName);
+  CConstDecl(this.name, this.type, this.value);
 
   String name;
   CType type;
   dynamic value;
-  String fileName;
 
   CConstDecl.fromJson(dynamic jsonData) :
     name = jsonData["name"],
     type = CType.fromJson(jsonData["type"]),
-    value = jsonData["value"],
-    fileName = jsonData["fileName"];
+    value = jsonData["value"];
 }
 
 /// A container for all of a clang compilation units top-level declarations.
@@ -173,6 +195,7 @@ class CUnitDecl {
     constants ??= {};
   }
 
+  Map<String, CSrcRef> srcRefs;
   Map<String, CStructDecl> structs;
   Map<String, CVarDecl> vars;
   Map<String, CConstDecl> constants;
@@ -183,5 +206,7 @@ class CUnitDecl {
     vars = (jsonData["vars"] as Map<String, dynamic>)
       .map((k, v) => MapEntry(k, CVarDecl.fromJson(v))),
     constants = (jsonData["constants"] as Map<String, dynamic>)
-      .map((k, v) => MapEntry(k, CConstDecl.fromJson(v)));
+      .map((k, v) => MapEntry(k, CConstDecl.fromJson(v))),
+    srcRefs = (jsonData["srcRefs"] as Map<String, dynamic>)
+      .map((k, v) => MapEntry(k, CSrcRef.fromJson(v)));
 }
