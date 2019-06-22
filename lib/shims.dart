@@ -1,20 +1,31 @@
 import 'dart:io';
 
-class ShimComponent {
+class                                                                                                                                                                                               ShimComponent {
   ShimComponent(this.target, this.code, {
     this.includes = const [], this.sysIncludes = const [],
     this.libraries = const [], this.extraArgs = const [],
     this.libraryPaths = const [],
     this.stackTrace
   });
+
   String target;
   String code;
-  List<String> includes;
   List<String> sysIncludes;
+  List<String> includes;
   List<String> libraries;
   List<String> libraryPaths;
   List<String> extraArgs;
   StackTrace stackTrace;
+
+  ShimComponent.fromJson(dynamic jsonData) :
+    target = jsonData["target"],
+    code = jsonData["code"],
+    sysIncludes = (jsonData["sysIncludes"] as List).cast<String>(),
+    includes = (jsonData["includes"] as List).cast<String>(),
+    libraries = (jsonData["libraries"] as List).cast<String>(),
+    libraryPaths = (jsonData["libraryPaths"] as List).cast<String>(),
+    extraArgs = (jsonData["extraArgs"] as List).cast<String>(),
+    stackTrace = StackTrace.fromString(jsonData["stackTrace"]);
 }
 
 class ShimCompilerException {
@@ -24,12 +35,13 @@ class ShimCompilerException {
 }
 
 class ShimCompiler {
-  String compiler;
-  String outputObject;
-  List<ShimComponent> components;
-  List<String> extraArgs;
-  bool debugPrints = true;
-  Future compile() async {
+  Future compile({
+    String compiler,
+    String outputObject,
+    List<ShimComponent> components,
+    List<String> extraArgs,
+    bool debugPrints = true,
+  }) async {
     var args = ["-c", "-fPIC", "-shared", "-x", "c", "-o", outputObject, ...extraArgs];
 
     var sysIncludes = <String>{};
@@ -46,7 +58,7 @@ class ShimCompiler {
 
     for (var l in libraryPaths) {
       args.add("-L$l");
-    } 
+    }
 
     for (var l in libraries) {
       args.add("-l$l");

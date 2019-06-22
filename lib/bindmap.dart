@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:convert';
 
 import 'package:bindgen/clang_decl.dart';
+import 'package:bindgen/shims.dart';
 import 'package:quiver/core.dart';
 
 /// A reference to a C symbol in a specific library
@@ -81,7 +82,13 @@ class BindMap {
   /// Bindings for all constants.
   Map<BindSymbol, DartRef> constants = {};
 
+  /// Shim components to be compiled.
+  List<ShimComponent> shims = [];
+
   BindMap.fromJson(dynamic jsonData) :
+    srcRefs = (jsonData["srcRefs"] as Map<String, dynamic>).map((k, v) =>
+      MapEntry(BindSymbol.fromJson(jsonDecode(k)), CSrcRef.fromJson(v))
+    ),
     structs = (jsonData["structs"] as Map<String, dynamic>).map((k, v) =>
       MapEntry(BindSymbol.fromJson(jsonDecode(k)), StructDeclMap.fromJson(v))
     ),
@@ -90,5 +97,8 @@ class BindMap {
     ),
     constants = (jsonData["constants"] as Map<String, dynamic>).map((k, v) =>
       MapEntry(BindSymbol.fromJson(jsonDecode(k)), DartRef.fromJson(v))
-    );
+    ),
+    shims = (jsonData["shims"] as List).map((e) =>
+      ShimComponent.fromJson(e)
+    ).toList();
 }
