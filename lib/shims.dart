@@ -1,14 +1,16 @@
 import 'dart:io';
 
 class                                                                                                                                                                                               ShimComponent {
-  ShimComponent(this.target, this.code, {
+  ShimComponent(this.targetFile, this.code, {
     this.includes = const [], this.sysIncludes = const [],
     this.libraries = const [], this.extraArgs = const [],
     this.libraryPaths = const [],
     this.stackTrace
-  });
+  }) {
+    stackTrace ??= StackTrace.current;
+  }
 
-  String target;
+  String targetFile;
   String code;
   List<String> sysIncludes;
   List<String> includes;
@@ -18,7 +20,7 @@ class                                                                           
   StackTrace stackTrace;
 
   ShimComponent.fromJson(dynamic jsonData) :
-    target = jsonData["target"],
+    targetFile = jsonData["target"],
     code = jsonData["code"],
     sysIncludes = (jsonData["sysIncludes"] as List).cast<String>(),
     includes = (jsonData["includes"] as List).cast<String>(),
@@ -42,7 +44,10 @@ class ShimCompiler {
     List<String> extraArgs,
     bool debugPrints = true,
   }) async {
-    var args = ["-c", "-fPIC", "-shared", "-x", "c", "-o", outputObject, ...extraArgs];
+    var args = [
+      "-c", "-fPIC", "-shared", "-x", "c", "-o", outputObject,
+      ...extraArgs
+    ];
 
     var sysIncludes = <String>{};
     var includes = <String>{};
@@ -83,7 +88,7 @@ class ShimCompiler {
     await cres.stdin.close();
 
     if (await cres.exitCode != 0) {
-      // TODO: parse line numbers and propagate these exceptions with
+      // TODO: parse line numbers in errors and propagate these exceptions with
       // the components stack trace
       throw ShimCompilerException(await cres.stderr.join());
     }

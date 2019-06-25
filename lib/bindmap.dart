@@ -46,16 +46,54 @@ class DartRef {
     destClass = jsonData["destClass"];
 }
 
-/// Container for mapping C struct and field declarations to their [DartRef]s.
-class StructDeclMap {
-  StructDeclMap(this.ref, this.fields);
+abstract class DeclMap {
+  DeclMap(this.ref, this.srcRef);
   DartRef ref;
-  LinkedHashMap<String, DartRef> fields;
-  StructDeclMap.fromJson(dynamic jsonData) :
+  CSrcRef srcRef;
+  DeclMap.fromJson(dynamic jsonData) :
     ref = DartRef.fromJson(jsonData["ref"]),
-    fields = LinkedHashMap.fromEntries((jsonData["fieldRefs"] as List).map((e) {
-      return MapEntry(e["name"], DartRef.fromJson(e["ref"]));
-    }));
+    srcRef = CSrcRef.fromJson(jsonData["srcRef"]);
+}
+
+/// Container for mapping C struct and field declarations to their [DartRef]s.
+class StructDeclMap extends DeclMap {
+  StructDeclMap(this.decl, this.fields, DartRef ref, CSrcRef srcRef) :
+    super(ref, srcRef);
+
+  CStructDecl decl;
+  LinkedHashMap<String, String> fields;
+
+  StructDeclMap.fromJson(dynamic jsonData) :
+    decl = CStructDecl.fromJson(jsonData["decl"]),
+    fields = LinkedHashMap.fromEntries((jsonData["fields"] as List).map((e) {
+      return MapEntry(e["name"], e["ref"]);
+    })),
+    super.fromJson(jsonData);
+}
+
+/// Container for mapping C variable declarations (incl. functions) to
+/// their [DartRef]s.
+class VarDeclMap extends DeclMap {
+  VarDeclMap(this.decl, DartRef ref, CSrcRef srcRef) :
+    super(ref, srcRef);
+
+  CVarDecl decl;
+
+  VarDeclMap.fromJson(dynamic jsonData) :
+    decl = CVarDecl.fromJson(jsonData["decl"]),
+    super.fromJson(jsonData);
+}
+
+/// Container for mapping C constants to their [DartRef]s.
+class ConstDeclMap extends DeclMap {
+  ConstDeclMap(this.decl, DartRef ref, CSrcRef srcRef) :
+    super(ref, srcRef);
+
+  CConstDecl decl;
+
+  ConstDeclMap.fromJson(dynamic jsonData) :
+    decl = CConstDecl.fromJson(jsonData["decl"]),
+    super.fromJson(jsonData);
 }
 
 /// Container for mapping all C declarations to their [DartRef]s.
@@ -70,33 +108,27 @@ class BindMap {
     constants ??= {};
   }
 
-  /// Source references for all declarations.
-  Map<BindSymbol, CSrcRef> srcRefs;
-
   /// Bindings for all struct declarations.
   Map<BindSymbol, StructDeclMap> structs = {};
 
   /// Bindings for all variable declarations (including functions).
-  Map<BindSymbol, DartRef> vars = {};
+  Map<BindSymbol, VarDeclMap> vars = {};
 
   /// Bindings for all constants.
-  Map<BindSymbol, DartRef> constants = {};
+  Map<BindSymbol, ConstDeclMap> constants = {};
 
   /// Shim components to be compiled.
   List<ShimComponent> shims = [];
 
   BindMap.fromJson(dynamic jsonData) :
-    srcRefs = (jsonData["srcRefs"] as Map<String, dynamic>).map((k, v) =>
-      MapEntry(BindSymbol.fromJson(jsonDecode(k)), CSrcRef.fromJson(v))
-    ),
     structs = (jsonData["structs"] as Map<String, dynamic>).map((k, v) =>
       MapEntry(BindSymbol.fromJson(jsonDecode(k)), StructDeclMap.fromJson(v))
     ),
     vars = (jsonData["vars"] as Map<String, dynamic>).map((k, v) =>
-      MapEntry(BindSymbol.fromJson(jsonDecode(k)), DartRef.fromJson(v))
+      MapEntry(BindSymbol.fromJson(jsonDecode(k)), VarDeclMap.fromJson(v))
     ),
     constants = (jsonData["constants"] as Map<String, dynamic>).map((k, v) =>
-      MapEntry(BindSymbol.fromJson(jsonDecode(k)), DartRef.fromJson(v))
+      MapEntry(BindSymbol.fromJson(jsonDecode(k)), ConstDeclMap.fromJson(v))
     ),
     shims = (jsonData["shims"] as List).map((e) =>
       ShimComponent.fromJson(e)

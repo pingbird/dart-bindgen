@@ -20,7 +20,9 @@ abstract class CType {
     if (jsonData["kind"] == "Function") return CFuncType.fromJson(jsonData);
     if (jsonData["kind"] == "Pointer") return CPointerType.fromJson(jsonData);
     if (jsonData["kind"] == "Struct") return CStructType.fromJson(jsonData);
-    if (jsonData["kind"] == "Primitive") return CPrimitiveType.fromJson(jsonData);
+    if (jsonData["kind"] == "Primitive") {
+      return CPrimitiveType.fromJson(jsonData);
+    }
     return null;
   }
 }
@@ -34,7 +36,9 @@ class CFuncType extends CType {
 
   CFuncType.fromJson(dynamic jsonData) :
     returnType = CType.fromJson(jsonData["returnType"]),
-    argTypes = (jsonData["argTypes"] as Iterable).map((e) => CType.fromJson(e)).toList(),
+    argTypes = (jsonData["argTypes"] as Iterable).map((e) =>
+      CType.fromJson(e)
+    ).toList(),
     varadic = jsonData["varadic"] == true;
 
   get hashCode => hash4("CFunc", varadic, returnType, hashObjects(argTypes));
